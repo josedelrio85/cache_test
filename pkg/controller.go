@@ -34,29 +34,22 @@ func (c controller) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	fmt.Println(value)
+	var counter string
+	if value != nil {
+		counter = string(value.Value)
+	}
 
 	response := struct {
 		Shout   string `json:"shout"`
 		Whistle string `json:"whistle"`
-		Counter int    `json:"counter"`
+		Counter string `json:"counter"`
 	}{
 		Shout:   c.bussinesShout.DoSomething("THE CLASH"),
 		Whistle: c.businessWhistle.DoSomething("THE SPECIALS"),
-		// Counter: int(value.Value[0]),
-	}
-
-	bytesResponse, err := json.Marshal(response)
-	if err != nil {
-		w.Header().Add("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		errorStr := fmt.Sprintf(`{"error": "%s"}`, err.Error())
-		json.NewEncoder(w).Encode(errorStr)
-		return
+		Counter: counter,
 	}
 
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(bytesResponse)
-
+	json.NewEncoder(w).Encode(response)
 }
