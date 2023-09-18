@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/josedelrio85/test_cache/pkg"
@@ -18,25 +16,6 @@ func setupDependencies() (service.Actionable, service.Actionable) {
 	return shoutService, whistleService
 }
 
-type MyJob struct {
-	cacheClient *memcache.Client
-}
-
-var counter = 0
-
-func (m MyJob) Run() {
-	counter++
-	counterStr := fmt.Sprintf("%d", counter)
-	fmt.Println("Running...", counterStr)
-	if err := m.cacheClient.Set(&memcache.Item{Key: "counter", Value: []byte(counterStr)}); err != nil {
-		fmt.Println(err)
-	}
-}
-
-func (MyJob) SleepTime() time.Duration {
-	return time.Second * 5
-}
-
 //https://michaelheap.com/golang-using-memcached/
 
 func main() {
@@ -45,11 +24,11 @@ func main() {
 	if err := cache.Ping(); err != nil {
 		log.Fatalf("can't ping memcached %v", err)
 	}
-	myJob := MyJob{
-		cacheClient: cache,
-	}
 
-	job.RegisterJob(&myJob)
+	counter := pkg.NewSafeCounter()
+
+	myJob := job.NewJob(cache, counter)
+	job.RegisterJob(myJob)
 
 	shoutService, whistleService := setupDependencies()
 	controller := pkg.NewController(shoutService, whistleService, cache)
@@ -62,5 +41,5 @@ func main() {
 }
 
 func initMemcache() *memcache.Client {
-	return memcache.New("127.0.0.1:11211")
+	return memcache.New("0.0.0.0:11211")
 }
